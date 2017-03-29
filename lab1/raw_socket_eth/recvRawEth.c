@@ -26,7 +26,7 @@
 
 #define ETHER_TYPE	0x0800
 
-#define DEFAULT_IF	"eth0"
+#define DEFAULT_IF	"enp0s25"
 #define BUF_SIZ		1518
 
 struct arp_packet {

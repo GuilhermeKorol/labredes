@@ -17,17 +17,34 @@
 #include <net/if.h>
 #include <netinet/ether.h>
 
-#define MY_DEST_MAC0	0x00
-#define MY_DEST_MAC1	0x00
-#define MY_DEST_MAC2	0x00
-#define MY_DEST_MAC3	0x00
-#define MY_DEST_MAC4	0x00
-#define MY_DEST_MAC5	0x00
+#define MY_DEST_MAC0	0xf0
+#define MY_DEST_MAC1	0x4d
+#define MY_DEST_MAC2	0xa2
+#define MY_DEST_MAC3	0xe5
+#define MY_DEST_MAC4	0x28
+#define MY_DEST_MAC5	0x25
 
 #define ETHER_TYPE	0x0800
 
-#define DEFAULT_IF	"eth0"
+#define DEFAULT_IF	"enp0s25"
 #define BUF_SIZ		1518
+
+struct arp_packet {
+        uint16_t hw_type;
+        uint16_t prot_type;
+        uint8_t  hlen;
+        uint8_t  dlen;
+        uint16_t operation;
+        uint8_t  sender_hwaddr[6];
+        uint8_t  sender_ip[4];
+        uint8_t  target_hwaddr[6];
+        uint8_t  target_ip[4];
+};
+
+union arp_packet_u {
+        struct arp_packet arp;
+        uint8_t raw_data[sizeof(struct arp_packet)];
+};
 
 int main(int argc, char *argv[])
 {
@@ -40,6 +57,7 @@ int main(int argc, char *argv[])
 	struct iphdr *iph = (struct iphdr *) (sendbuf + sizeof(struct ether_header));
 	struct sockaddr_ll socket_address;
 	char ifName[IFNAMSIZ];
+	union arp_packet_u arp_payload;
 	
 	/* Get interface name */
 	if (argc > 1)
@@ -83,10 +101,32 @@ int main(int argc, char *argv[])
 	tx_len += sizeof(struct ether_header);
 
 	/* Packet data */
-	sendbuf[tx_len++] = 0xde;
-	sendbuf[tx_len++] = 0xad;
-	sendbuf[tx_len++] = 0xbe;
-	sendbuf[tx_len++] = 0xef;
+	//sendbuf[tx_len++] = 0xde;
+	//sendbuf[tx_len++] = 0xad;
+	//sendbuf[tx_len++] = 0xbe;
+	//sendbuf[tx_len++] = 0xef;
+	/* Fill ARP header */
+	arp_payload.arp.hw_type = ;
+	arp_payload.arp.prot_type = ;
+	arp_payload.arp.hlen = ;
+	arp_payload.arp.dlen = ;
+	arp_payload.arp.operation = ;
+	arp_payload.arp.sender_hwaddr[0] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[0];
+	arp_payload.arp.sender_hwaddr[1] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[1];
+	arp_payload.arp.sender_hwaddr[2] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[2];
+	arp_payload.arp.sender_hwaddr[3] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[3];
+	arp_payload.arp.sender_hwaddr[4] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[4];
+	arp_payload.arp.sender_hwaddr[5] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[5];
+	arp_payload.arp.sender_ip = ;
+	arp_payload.arp.target_hwaddr[0] = MY_DEST_MAC0;
+	arp_payload.arp.target_hwaddr[1] = MY_DEST_MAC1;
+	arp_payload.arp.target_hwaddr[2] = MY_DEST_MAC2;
+	arp_payload.arp.target_hwaddr[3] = MY_DEST_MAC3;
+	arp_payload.arp.target_hwaddr[4] = MY_DEST_MAC4;
+	arp_payload.arp.target_hwaddr[5] = MY_DEST_MAC5;
+	arp_payload.arp.target_ip = ;
+
+	/* Copy header to Packet Data */
 
 	/* Index of the network device */
 	socket_address.sll_ifindex = if_idx.ifr_ifindex;
