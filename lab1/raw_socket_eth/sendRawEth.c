@@ -27,12 +27,12 @@
 //ROUTER <--> sendRawEth.c <--> DEST
 #define ROUTER_IP0  10
 #define ROUTER_IP1  32
-#define ROUTER_IP2  143
-#define ROUTER_IP3  211
+#define ROUTER_IP2  162
+#define ROUTER_IP3  136
 
 #define DEST_IP0  10
 #define DEST_IP1  32
-#define DEST_IP2  143
+#define DEST_IP2  162
 #define DEST_IP3  1
 
 #define ETHER_TYPE	0x0800
@@ -63,13 +63,13 @@ int main(int argc, char *argv[])
 	struct ifreq if_idx;
 	struct ifreq if_mac;
 	int tx_len = 0;
-	char sendbuf[BUF_SIZ];
+	uint8_t sendbuf[BUF_SIZ];
 	struct ether_header *eh = (struct ether_header *) sendbuf;
 	struct iphdr *iph = (struct iphdr *) (sendbuf + sizeof(struct ether_header));
 	struct sockaddr_ll socket_address;
 	char ifName[IFNAMSIZ];
 	union arp_packet_u arp_payload;
-	
+
 	/* Get interface name */
 	if (argc > 1)
 		strcpy(ifName, argv[1]);
@@ -111,9 +111,15 @@ int main(int argc, char *argv[])
 	eh->ether_type = htons(ETH_P_IP);
 	tx_len += sizeof(struct ether_header);
 
+  /* Packet data */
+	//sendbuf[tx_len++] = 0xde;
+	//sendbuf[tx_len++] = 0xad;
+	//sendbuf[tx_len++] = 0xbe;
+	//sendbuf[tx_len++] = 0xef;
+
 	/* Fill ARP header */
 	arp_payload.arp.hw_type = htons(1);             //hardware type = Ethernet
-	arp_payload.arp.prot_type = htons(0x0800);      //protocol type = IPv4
+	arp_payload.arp.prot_type = htons(0x0806);      //protocol type = IPv4
 	arp_payload.arp.hlen = 6;                       //Ethernet addresses are 8 octets
 	arp_payload.arp.dlen = 4;                       //IPv4 addresses are 4 octets
 	arp_payload.arp.operation = htons(1);           //1 for REQUEST, 2 for REPLY
@@ -127,8 +133,8 @@ int main(int argc, char *argv[])
 
 	arp_payload.arp.sender_ip[0] = 10;  //ROUTER_IP0;
 	arp_payload.arp.sender_ip[1] = 32;  //ROUTER_IP1;
-	arp_payload.arp.sender_ip[2] = 143; //ROUTER_IP2;
-	arp_payload.arp.sender_ip[3] = 211; //ROUTER_IP3;
+	arp_payload.arp.sender_ip[2] = 162; //ROUTER_IP2;
+	arp_payload.arp.sender_ip[3] = 136; //ROUTER_IP3;
 
 	arp_payload.arp.target_hwaddr[0] = MY_DEST_MAC0;
 	arp_payload.arp.target_hwaddr[1] = MY_DEST_MAC1;
@@ -142,13 +148,10 @@ int main(int argc, char *argv[])
 	arp_payload.arp.target_ip[2] = DEST_IP2;
 	arp_payload.arp.target_ip[3] = DEST_IP3;
 
-    //tx_len += sizeof(struct arp_packet);
+  printf("ethernet payload size = %ld\n", sizeof(struct arp_packet));
+  //tx_len += sizeof(struct arp_packet);
 
-    for (int i=0; i < sizeof(struct arp_packet); i++) {
-        sendbuf[tx_len++] = arp_payload.raw_data[i];    
-    }
-
-    /* Index of the network device */
+  /* Index of the network device */
 	socket_address.sll_ifindex = if_idx.ifr_ifindex;
 	/* Address length*/
 	socket_address.sll_halen = ETH_ALEN;
@@ -160,8 +163,15 @@ int main(int argc, char *argv[])
 	socket_address.sll_addr[4] = MY_DEST_MAC4;
 	socket_address.sll_addr[5] = MY_DEST_MAC5;
 
+  printf("La vem payload\n");
+  for (int j=0;j<sizeof(struct arp_packet); j++) {
+    sendbuf[tx_len++] = arp_payload.raw_data[j];
+    printf("[%d] %x\n",j, arp_payload.raw_data[j]);
+  }
+
 	/* Send packet */
-	if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
+	//if (sendto(sockfd, arp_payload.raw_data, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
+  if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
 	    printf("Send failed\n");
 
 	return 0;
