@@ -100,7 +100,7 @@ repeat:	printf("listener: Waiting to recvfrom...\n");
 	printf("listener: got packet %lu bytes\n", numbytes);
 
 	/* Check the packet is for me */
-	if (eh->ether_dhost[0] == DEST_MAC0 &&
+	if (eh->ether_dhost[0]     == DEST_MAC0 &&
 			eh->ether_dhost[1] == DEST_MAC1 &&
 			eh->ether_dhost[2] == DEST_MAC2 &&
 			eh->ether_dhost[3] == DEST_MAC3 &&

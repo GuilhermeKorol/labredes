@@ -17,12 +17,23 @@
 #include <net/if.h>
 #include <netinet/ether.h>
 
-#define MY_DEST_MAC0	0xf0
-#define MY_DEST_MAC1	0x4d
-#define MY_DEST_MAC2	0xa2
-#define MY_DEST_MAC3	0xe5
-#define MY_DEST_MAC4	0x28
-#define MY_DEST_MAC5	0x25
+#define MY_DEST_MAC0 0xf0
+#define MY_DEST_MAC1 0x4d
+#define MY_DEST_MAC2 0xa2
+#define MY_DEST_MAC3 0xe5
+#define MY_DEST_MAC4 0x28
+#define MY_DEST_MAC5 0x25
+
+//ROUTER <--> sendRawEth.c <--> DEST
+#define ROUTER_IP0  10
+#define ROUTER_IP1  32
+#define ROUTER_IP2  143
+#define ROUTER_IP3  211
+
+#define DEST_IP0  10
+#define DEST_IP1  32
+#define DEST_IP2  143
+#define DEST_IP3  1
 
 #define ETHER_TYPE	0x0800
 
@@ -100,35 +111,44 @@ int main(int argc, char *argv[])
 	eh->ether_type = htons(ETH_P_IP);
 	tx_len += sizeof(struct ether_header);
 
-	/* Packet data */
-	//sendbuf[tx_len++] = 0xde;
-	//sendbuf[tx_len++] = 0xad;
-	//sendbuf[tx_len++] = 0xbe;
-	//sendbuf[tx_len++] = 0xef;
 	/* Fill ARP header */
-	arp_payload.arp.hw_type = ;
-	arp_payload.arp.prot_type = ;
-	arp_payload.arp.hlen = ;
-	arp_payload.arp.dlen = ;
-	arp_payload.arp.operation = ;
+	arp_payload.arp.hw_type = htons(1);             //hardware type = Ethernet
+	arp_payload.arp.prot_type = htons(0x0800);      //protocol type = IPv4
+	arp_payload.arp.hlen = 6;                       //Ethernet addresses are 8 octets
+	arp_payload.arp.dlen = 4;                       //IPv4 addresses are 4 octets
+	arp_payload.arp.operation = htons(1);           //1 for REQUEST, 2 for REPLY
+
 	arp_payload.arp.sender_hwaddr[0] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[0];
 	arp_payload.arp.sender_hwaddr[1] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[1];
 	arp_payload.arp.sender_hwaddr[2] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[2];
 	arp_payload.arp.sender_hwaddr[3] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[3];
 	arp_payload.arp.sender_hwaddr[4] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[4];
 	arp_payload.arp.sender_hwaddr[5] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[5];
-	arp_payload.arp.sender_ip = ;
+
+	arp_payload.arp.sender_ip[0] = 10;  //ROUTER_IP0;
+	arp_payload.arp.sender_ip[1] = 32;  //ROUTER_IP1;
+	arp_payload.arp.sender_ip[2] = 143; //ROUTER_IP2;
+	arp_payload.arp.sender_ip[3] = 211; //ROUTER_IP3;
+
 	arp_payload.arp.target_hwaddr[0] = MY_DEST_MAC0;
 	arp_payload.arp.target_hwaddr[1] = MY_DEST_MAC1;
 	arp_payload.arp.target_hwaddr[2] = MY_DEST_MAC2;
 	arp_payload.arp.target_hwaddr[3] = MY_DEST_MAC3;
 	arp_payload.arp.target_hwaddr[4] = MY_DEST_MAC4;
 	arp_payload.arp.target_hwaddr[5] = MY_DEST_MAC5;
-	arp_payload.arp.target_ip = ;
 
-	/* Copy header to Packet Data */
+	arp_payload.arp.target_ip[0] = DEST_IP0;
+	arp_payload.arp.target_ip[1] = DEST_IP1;
+	arp_payload.arp.target_ip[2] = DEST_IP2;
+	arp_payload.arp.target_ip[3] = DEST_IP3;
 
-	/* Index of the network device */
+    //tx_len += sizeof(struct arp_packet);
+
+    for (int i=0; i < sizeof(struct arp_packet); i++) {
+        sendbuf[tx_len++] = arp_payload.raw_data[i];    
+    }
+
+    /* Index of the network device */
 	socket_address.sll_ifindex = if_idx.ifr_ifindex;
 	/* Address length*/
 	socket_address.sll_halen = ETH_ALEN;
