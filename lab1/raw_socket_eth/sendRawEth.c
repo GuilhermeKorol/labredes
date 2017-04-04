@@ -66,6 +66,7 @@ int main(int argc, char *argv[])
 	uint8_t sendbuf[BUF_SIZ];
 	struct ether_header *eh = (struct ether_header *) sendbuf;
 	struct iphdr *iph = (struct iphdr *) (sendbuf + sizeof(struct ether_header));
+  //BOTAR O ARP AQUI!!!!
 	struct sockaddr_ll socket_address;
 	char ifName[IFNAMSIZ];
 	union arp_packet_u arp_payload;
