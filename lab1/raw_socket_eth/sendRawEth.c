@@ -17,12 +17,12 @@
 #include <net/if.h>
 #include <netinet/ether.h>
 
-#define MY_DEST_MAC0 0xf0
-#define MY_DEST_MAC1 0x4d
-#define MY_DEST_MAC2 0xa2
-#define MY_DEST_MAC3 0xe5
-#define MY_DEST_MAC4 0x28
-#define MY_DEST_MAC5 0x25
+#define MY_DEST_MAC0 0xff
+#define MY_DEST_MAC1 0xff
+#define MY_DEST_MAC2 0xff
+#define MY_DEST_MAC3 0xff
+#define MY_DEST_MAC4 0xff
+#define MY_DEST_MAC5 0xff
 
 //ROUTER <--> sendRawEth.c <--> DEST
 #define ROUTER_IP0  10
@@ -109,7 +109,8 @@ int main(int argc, char *argv[])
 	eh->ether_dhost[4] = MY_DEST_MAC4;
 	eh->ether_dhost[5] = MY_DEST_MAC5;
 	/* Ethertype field */
-	eh->ether_type = htons(ETH_P_IP);
+	//eh->ether_type = htons(ETH_P_IP);
+  eh->ether_type = htons(ETH_P_ARP);
 	tx_len += sizeof(struct ether_header);
 
   /* Packet data */
@@ -119,11 +120,11 @@ int main(int argc, char *argv[])
 	//sendbuf[tx_len++] = 0xef;
 
 	/* Fill ARP header */
-	arp_payload.arp.hw_type = htons(1);             //hardware type = Ethernet
-	arp_payload.arp.prot_type = htons(0x0806);      //protocol type = IPv4
-	arp_payload.arp.hlen = 6;                       //Ethernet addresses are 8 octets
+	arp_payload.arp.hw_type = htons(ARPHRD_ETHER);             //hardware type = Ethernet
+	arp_payload.arp.prot_type = htons(ETH_P_IP);      //protocol type = IPv4
+	arp_payload.arp.hlen = ETH_ALEN;                       //Ethernet addresses are 8 octets
 	arp_payload.arp.dlen = 4;                       //IPv4 addresses are 4 octets
-	arp_payload.arp.operation = htons(1);           //1 for REQUEST, 2 for REPLY
+	arp_payload.arp.operation = htons(2);           //1 for REQUEST, 2 for REPLY
 
 	arp_payload.arp.sender_hwaddr[0] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[0];
 	arp_payload.arp.sender_hwaddr[1] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[1];
@@ -144,10 +145,10 @@ int main(int argc, char *argv[])
 	arp_payload.arp.target_hwaddr[4] = MY_DEST_MAC4;
 	arp_payload.arp.target_hwaddr[5] = MY_DEST_MAC5;
 
-	arp_payload.arp.target_ip[0] = DEST_IP0;
-	arp_payload.arp.target_ip[1] = DEST_IP1;
-	arp_payload.arp.target_ip[2] = DEST_IP2;
-	arp_payload.arp.target_ip[3] = DEST_IP3;
+	arp_payload.arp.target_ip[0] = 0; //DEST_IP0;
+	arp_payload.arp.target_ip[1] = 0; //DEST_IP1;
+	arp_payload.arp.target_ip[2] = 0; //DEST_IP2;
+	arp_payload.arp.target_ip[3] = 0; //DEST_IP3;
 
   printf("ethernet payload size = %ld\n", sizeof(struct arp_packet));
   //tx_len += sizeof(struct arp_packet);
