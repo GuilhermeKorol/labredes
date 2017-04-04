@@ -66,10 +66,9 @@ int main(int argc, char *argv[])
 	uint8_t sendbuf[BUF_SIZ];
 	struct ether_header *eh = (struct ether_header *) sendbuf;
 	struct iphdr *iph = (struct iphdr *) (sendbuf + sizeof(struct ether_header));
-  //BOTAR O ARP AQUI!!!!
+  struct arp_packet *arp_payload = (struct arp_packet *) (sendbuf + sizeof(struct ether_header) + sizeof(struct iphdr));
 	struct sockaddr_ll socket_address;
 	char ifName[IFNAMSIZ];
-	union arp_packet_u arp_payload;
 
 	/* Get interface name */
 	if (argc > 1)
@@ -109,49 +108,42 @@ int main(int argc, char *argv[])
 	eh->ether_dhost[4] = MY_DEST_MAC4;
 	eh->ether_dhost[5] = MY_DEST_MAC5;
 	/* Ethertype field */
-	//eh->ether_type = htons(ETH_P_IP);
   eh->ether_type = htons(ETH_P_ARP);
 	tx_len += sizeof(struct ether_header);
 
-  /* Packet data */
-	//sendbuf[tx_len++] = 0xde;
-	//sendbuf[tx_len++] = 0xad;
-	//sendbuf[tx_len++] = 0xbe;
-	//sendbuf[tx_len++] = 0xef;
-
 	/* Fill ARP header */
-	arp_payload.arp.hw_type = htons(ARPHRD_ETHER);             //hardware type = Ethernet
-	arp_payload.arp.prot_type = htons(ETH_P_IP);      //protocol type = IPv4
-	arp_payload.arp.hlen = ETH_ALEN;                       //Ethernet addresses are 8 octets
-	arp_payload.arp.dlen = 4;                       //IPv4 addresses are 4 octets
-	arp_payload.arp.operation = htons(2);           //1 for REQUEST, 2 for REPLY
+	arp_payload->hw_type = htons(ARPHRD_ETHER);    //hardware type = Ethernet
+	arp_payload->prot_type = htons(ETH_P_IP);      //protocol type = IPv4
+	arp_payload->hlen = ETH_ALEN;                  //Ethernet addresses are 8 octets
+	arp_payload->dlen = 4;                         //IPv4 addresses are 4 octets
+	arp_payload->operation = htons(2);             //1 for REQUEST, 2 for REPLY
 
-	arp_payload.arp.sender_hwaddr[0] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[0];
-	arp_payload.arp.sender_hwaddr[1] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[1];
-	arp_payload.arp.sender_hwaddr[2] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[2];
-	arp_payload.arp.sender_hwaddr[3] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[3];
-	arp_payload.arp.sender_hwaddr[4] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[4];
-	arp_payload.arp.sender_hwaddr[5] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[5];
+	arp_payload->sender_hwaddr[0] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[0];
+	arp_payload->sender_hwaddr[1] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[1];
+	arp_payload->sender_hwaddr[2] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[2];
+	arp_payload->sender_hwaddr[3] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[3];
+	arp_payload->sender_hwaddr[4] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[4];
+	arp_payload->sender_hwaddr[5] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[5];
 
-	arp_payload.arp.sender_ip[0] = 10;  //ROUTER_IP0;
-	arp_payload.arp.sender_ip[1] = 32;  //ROUTER_IP1;
-	arp_payload.arp.sender_ip[2] = 162; //ROUTER_IP2;
-	arp_payload.arp.sender_ip[3] = 136; //ROUTER_IP3;
+	arp_payload->sender_ip[0] = 10;  //ROUTER_IP0;
+	arp_payload->sender_ip[1] = 32;  //ROUTER_IP1;
+	arp_payload->sender_ip[2] = 162; //ROUTER_IP2;
+	arp_payload->sender_ip[3] = 136; //ROUTER_IP3;
 
-	arp_payload.arp.target_hwaddr[0] = MY_DEST_MAC0;
-	arp_payload.arp.target_hwaddr[1] = MY_DEST_MAC1;
-	arp_payload.arp.target_hwaddr[2] = MY_DEST_MAC2;
-	arp_payload.arp.target_hwaddr[3] = MY_DEST_MAC3;
-	arp_payload.arp.target_hwaddr[4] = MY_DEST_MAC4;
-	arp_payload.arp.target_hwaddr[5] = MY_DEST_MAC5;
+	arp_payload->target_hwaddr[0] = MY_DEST_MAC0;
+	arp_payload->target_hwaddr[1] = MY_DEST_MAC1;
+	arp_payload->target_hwaddr[2] = MY_DEST_MAC2;
+	arp_payload->target_hwaddr[3] = MY_DEST_MAC3;
+	arp_payload->target_hwaddr[4] = MY_DEST_MAC4;
+	arp_payload->target_hwaddr[5] = MY_DEST_MAC5;
 
-	arp_payload.arp.target_ip[0] = 0; //DEST_IP0;
-	arp_payload.arp.target_ip[1] = 0; //DEST_IP1;
-	arp_payload.arp.target_ip[2] = 0; //DEST_IP2;
-	arp_payload.arp.target_ip[3] = 0; //DEST_IP3;
+	arp_payload->target_ip[0] = 0; //DEST_IP0;
+	arp_payload->target_ip[1] = 0; //DEST_IP1;
+	arp_payload->target_ip[2] = 0; //DEST_IP2;
+	arp_payload->target_ip[3] = 0; //DEST_IP3;
 
   printf("ethernet payload size = %ld\n", sizeof(struct arp_packet));
-  //tx_len += sizeof(struct arp_packet);
+  tx_len += sizeof(struct arp_packet);
 
   /* Index of the network device */
 	socket_address.sll_ifindex = if_idx.ifr_ifindex;
@@ -165,14 +157,7 @@ int main(int argc, char *argv[])
 	socket_address.sll_addr[4] = MY_DEST_MAC4;
 	socket_address.sll_addr[5] = MY_DEST_MAC5;
 
-  printf("La vem payload\n");
-  for (int j=0;j<sizeof(struct arp_packet); j++) {
-    sendbuf[tx_len++] = arp_payload.raw_data[j];
-    printf("[%d] %x\n",j, arp_payload.raw_data[j]);
-  }
-
 	/* Send packet */
-	//if (sendto(sockfd, arp_payload.raw_data, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
   if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
 	    printf("Send failed\n");
 
