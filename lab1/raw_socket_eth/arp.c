@@ -4,7 +4,14 @@
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  */
-
+ 
+/*
+ *  ARP POISONING ATTACK COM MAN-IN-THE-MIDDLE
+ *  Guiherme Korol e Matheus Storck
+ *
+ *  GATEWAY <--> arp.c <--> VITIMA
+ *
+*/
 #include <arpa/inet.h>
 #include <linux/if_packet.h>
 #include <linux/ip.h>
@@ -31,7 +38,6 @@
 #define GATEWAY_MAC4 0xea //0xaa
 #define GATEWAY_MAC5 0xa6 //0xa0
 
-//ROUTER <--> sendRawEth.c <--> DEST
 #define GATEWAY_IP0 10  //192
 #define GATEWAY_IP1 32  //168
 #define GATEWAY_IP2 143 //1
