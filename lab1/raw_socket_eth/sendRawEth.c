@@ -17,30 +17,30 @@
 #include <net/if.h>
 #include <netinet/ether.h>
 
-#define VITIMA_MAC0 0xa4 //0x40 //0x4c
-#define VITIMA_MAC1 0x1f //0xf0 //0xed
-#define VITIMA_MAC2 0x72 //0x2f //0xde
-#define VITIMA_MAC3 0xf5 //0x7f //0x9f
-#define VITIMA_MAC4 0x90 //0x55 //0xa2
-#define VITIMA_MAC5 0x52 //0xbf //0xcd
+#define VITIMA_MAC0 0x40 //0xa4 //0x4c
+#define VITIMA_MAC1 0xf0 //0x1f //0xed
+#define VITIMA_MAC2 0x2f //0x72 //0xde
+#define VITIMA_MAC3 0x7f //0xf5 //0x9f
+#define VITIMA_MAC4 0x55 //0x90 //0xa2
+#define VITIMA_MAC5 0xbf //0x52 //0xcd
 
-#define GATEWAY_MAC0 0x00 //0xa0
-#define GATEWAY_MAC1 0x01 //0xf3
-#define GATEWAY_MAC2 0x02 //0xc1
-#define GATEWAY_MAC3 0x23 //0x4f
-#define GATEWAY_MAC4 0xea //0xaa
-#define GATEWAY_MAC5 0xa6 //0xa0
+#define GATEWAY_MAC0 0xa0  //0x00
+#define GATEWAY_MAC1 0xf3  //0x01
+#define GATEWAY_MAC2 0xc1  //0x02
+#define GATEWAY_MAC3 0x4f  //0x23
+#define GATEWAY_MAC4 0xaa  //0xea
+#define GATEWAY_MAC5 0xa0  //0xa6
 
 //ROUTER <--> sendRawEth.c <--> DEST
-#define GATEWAY_IP0 10  //192
-#define GATEWAY_IP1 32  //168
-#define GATEWAY_IP2 143 //1
+#define GATEWAY_IP0 192 //10
+#define GATEWAY_IP1 168 //32
+#define GATEWAY_IP2 1   //143
 #define GATEWAY_IP3 1
 
-#define VITIMA_IP0 10  //192
-#define VITIMA_IP1 32  //168
-#define VITIMA_IP2 143 //1
-#define VITIMA_IP3 183 //102
+#define VITIMA_IP0 192 //10
+#define VITIMA_IP1 168 //32
+#define VITIMA_IP2 1   //143
+#define VITIMA_IP3 102 //183
 
 #define ETHER_TYPE	0x0800
 
