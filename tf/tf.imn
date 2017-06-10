@@ -1,0 +1,127 @@
+node n1 {
+    type router
+    model host
+    network-config {
+	hostname vitima
+	!
+	interface eth0
+	 ip address 10.0.0.10/24
+	 ipv6 address 2001:0::10/64
+	!
+    }
+    canvas c1
+    iconcoords {79.0 417.0}
+    labelcoords {79.0 449.0}
+    interface-peer {eth0 n3}
+}
+
+node n2 {
+    type router
+    model host
+    network-config {
+	hostname atacante
+	!
+	interface eth0
+	 ip address 10.0.0.11/24
+	 ipv6 address 2001:0::11/64
+	!
+    }
+    canvas c1
+    iconcoords {524.0 454.0}
+    labelcoords {524.0 486.0}
+    interface-peer {eth0 n3}
+}
+
+node n3 {
+    type lanswitch
+    network-config {
+	hostname n3
+	!
+    }
+    canvas c1
+    iconcoords {352.0 314.0}
+    labelcoords {352.0 338.0}
+    interface-peer {e0 n1}
+    interface-peer {e1 n2}
+    interface-peer {e2 n4}
+}
+
+node n4 {
+    type router
+    model router
+    network-config {
+	hostname n4
+	!
+	interface eth1
+	 ip address 10.0.1.1/24
+	 ipv6 address 2001:1::1/64
+	!
+	interface eth0
+	 ip address 10.0.0.1/24
+	 ipv6 address 2001:0::1/64
+	!
+    }
+    canvas c1
+    iconcoords {183.0 189.0}
+    labelcoords {183.0 221.0}
+    interface-peer {eth0 n3}
+    interface-peer {eth1 n5}
+}
+
+node n5 {
+    type router
+    model host
+    network-config {
+	hostname servidor
+	!
+	interface eth0
+	 ip address 10.0.1.10/24
+	 ipv6 address 2001:1::10/64
+	!
+    }
+    canvas c1
+    iconcoords {391.0 81.0}
+    labelcoords {391.0 113.0}
+    interface-peer {eth0 n4}
+}
+
+link l1 {
+    nodes {n3 n1}
+    bandwidth 0
+}
+
+link l2 {
+    nodes {n3 n2}
+    bandwidth 0
+}
+
+link l3 {
+    nodes {n4 n3}
+    bandwidth 0
+}
+
+link l4 {
+    nodes {n4 n5}
+    bandwidth 0
+}
+
+canvas c1 {
+    name {Canvas1}
+}
+
+option global {
+    interface_names no
+    ip_addresses yes
+    ipv6_addresses no
+    node_labels yes
+    link_labels yes
+    show_api no
+    background_images no
+    annotations yes
+    grid yes
+    traffic_start 0
+}
+
+option session {
+}
+

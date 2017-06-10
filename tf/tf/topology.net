@@ -1,0 +1,61 @@
+autostart = False
+version = 0.8.7
+[127.0.0.1:7200]
+    workingdir = /tmp
+    udp = 10001
+    [[3640]]
+        image = /home/labredes/Downloads/c3640-is-mz.123-14.T7.image
+        idlepc = 0x606a23fc
+        sparsemem = True
+        ghostios = True
+        chassis = 3640
+    [[ROUTER R1]]
+        model = 3640
+        console = 2103
+        aux = 2503
+        slot0 = NM-1E
+        e0/0 = SW1 3
+        slot1 = NM-1E
+        e1/0 = PC3 e0/0
+        x = -117.0
+        y = -118.0
+        z = 1.0
+    [[ROUTER PC2]]
+        model = 3640
+        console = 2102
+        aux = 2502
+        slot0 = NM-1E
+        e0/0 = SW1 2
+        symbol = computer
+        x = -25.0
+        y = 123.0
+        z = 1.0
+    [[ROUTER PC3]]
+        model = 3640
+        console = 2107
+        aux = 2507
+        slot0 = NM-1E
+        e0/0 = R1 e1/0
+        symbol = computer
+        x = 19.0
+        y = -212.0
+        z = 1.0
+    [[ROUTER PC1]]
+        model = 3640
+        console = 2101
+        aux = 2501
+        slot0 = NM-1E
+        e0/0 = SW1 1
+        symbol = computer
+        x = -206.0
+        y = 120.0
+        z = 1.0
+    [[ETHSW SW1]]
+        1 = access 1 PC1 e0/0
+        2 = access 1 PC2 e0/0
+        3 = access 1 R1 e0/0
+        x = -125.5
+        y = 8.0
+        z = 1.0
+[GNS3-DATA]
+    configs = configs
