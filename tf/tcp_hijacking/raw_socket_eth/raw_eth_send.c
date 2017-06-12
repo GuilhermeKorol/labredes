@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 
 	/* Monta o cabecalho Ethernet */
 
-	/* Preenche o campo de endereco MAC de destino */	
+	/* Preenche o campo de endereco MAC de destino */
 	memcpy(buffer, dest_mac, MAC_ADDR_LEN);
 	frame_len += MAC_ADDR_LEN;
 
@@ -93,8 +93,6 @@ int main(int argc, char *argv[])
 		close(fd);
 		exit(1);
 	}
-
-	printf("Pacote enviado.\n");
 
 	close(fd);
 	return 0;
