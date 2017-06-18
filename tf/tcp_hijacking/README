@@ -1,0 +1,14 @@
+1) No atacante, ./atacante.sh
+  -> Habilita IP FORWARDING;
+  -> Desabilita ICMP Redirect;
+  -> Roda ARP SPOOF;
+
+2) No servidor, ./server.sh
+  -> Roda simple-server na porta 8000
+
+3) Na vitima, ./vitima/sh
+  -> Roda simple-client para servidor aberto
+
+4) Abra um novo bash no atacante e ./hijack.sh
+  -> Habilita IP FORWARDING;
+  -> Roda hijack_session no servidor aberto.
